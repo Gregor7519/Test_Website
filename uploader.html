@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Arduino Web Uploader</title>
+    <!-- Wir laden die fertige Uploader-Library via CDN -->
+    <script src="https://unpkg.com/arduino-web-uploader@latest/dist/browser/index.js"></script>
+</head>
+<body>
+
+    <h1>Arduino Firmware Updater</h1>
+    <p>Schließe deinen Arduino Uno per USB an und klicke auf den Button.</p>
+
+    <!-- Der Button steuert das Skript an -->
+    <button id="uploadBtn">Programm auf Arduino spielen</button>
+    <p id="status">Status: Bereit</p>
+
+    <script>
+        document.getElementById('uploadBtn').addEventListener('click', async () => {
+            const statusEl = document.getElementById('status');
+            statusEl.innerText = "Status: Verbinde mit Board...";
+
+            try {
+                // Pfad zu deiner im Repository hinterlegten .hex Datei
+                const hexUrl = "./mein_programm.hex"; 
+                
+                // Wir nutzen das vordefinierte Profil für den Arduino Uno
+                const board = ArduinoWebUploader.boards.uno; 
+
+                // Startet den interaktiven Browser-Dialog zur Port-Auswahl 
+                // und flasht die Datei direkt auf den Controller
+                await ArduinoWebUploader.upload(board, hexUrl, (percentage) => {
+                    statusEl.innerText = `Status: Übertrage... ${percentage}%`;
+                });
+
+                statusEl.innerText = "Status: Erfolg! Programm wurde aufgespielt.";
+            } catch (error) {
+                console.error(error);
+                statusEl.innerText = `Fehler: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>
