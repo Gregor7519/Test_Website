@@ -2,43 +2,43 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Arduino Web Uploader</title>
-    <!-- Wir laden die fertige Uploader-Library via CDN -->
-    <script src="https://unpkg.com/arduino-web-uploader@latest/dist/browser/index.js"></script>
+    <title>Funduino Uno Web Uploader</title>
+    
+    <!-- Dieses Skript sucht automatisch nach speziellen Buttons auf der Seite -->
+    <script src="https://dbuezas.github.io/arduino-web-uploader/test/index.js"></script>
+    
+    <style>
+        body { font-family: sans-serif; padding: 20px; text-align: center; }
+        /* Schickes Styling für den Upload-Button */
+        button[arduino-uploader] {
+            background-color: #00979d;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button[arduino-uploader]:hover { background-color: #008185; }
+    </style>
 </head>
 <body>
 
-    <h1>Arduino Firmware Updater</h1>
-    <p>Schließe deinen Arduino Uno per USB an und klicke auf den Button.</p>
+    <h1>Funduino Uno Firmware Updater</h1>
+    <p>Schließe deinen Funduino per USB an und klicke auf den Button.</p>
 
-    <!-- Der Button steuert das Skript an -->
-    <button id="uploadBtn">Programm auf Arduino spielen</button>
-    <p id="status">Status: Bereit</p>
+    <!-- 
+      Das Skript reagiert vollautomatisch auf die Attribute in diesem Button!
+      - arduino-uploader: Aktiviert die Library für diesen Button
+      - hex-href: Der Pfad zu deiner .hex-Datei (z.B. im selben Ordner)
+      - board: "uno" passt perfekt für deinen Funduino Uno
+    -->
+    <button 
+        arduino-uploader 
+        hex-href="./mein_programm.hex" 
+        board="uno">
+        Programm auf Funduino spielen
+    </button>
 
-    <script>
-        document.getElementById('uploadBtn').addEventListener('click', async () => {
-            const statusEl = document.getElementById('status');
-            statusEl.innerText = "Status: Verbinde mit Board...";
-
-            try {
-                // Pfad zu deiner im Repository hinterlegten .hex Datei
-                const hexUrl = "./Test_Website.ino.hex"; 
-                
-                // Wir nutzen das vordefinierte Profil für den Arduino Uno
-                const board = ArduinoWebUploader.boards.uno; 
-
-                // Startet den interaktiven Browser-Dialog zur Port-Auswahl 
-                // und flasht die Datei direkt auf den Controller
-                await ArduinoWebUploader.upload(board, hexUrl, (percentage) => {
-                    statusEl.innerText = `Status: Übertrage... ${percentage}%`;
-                });
-
-                statusEl.innerText = "Status: Erfolg! Programm wurde aufgespielt.";
-            } catch (error) {
-                console.error(error);
-                statusEl.innerText = `Fehler: ${error.message}`;
-            }
-        });
-    </script>
 </body>
 </html>
