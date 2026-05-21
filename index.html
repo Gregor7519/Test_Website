@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ESP32 Visualizer & Debugger</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        margin: 20px;
+        background: #f0f2f5;
+      }
+      .container {
+        max-width: 1000px;
+        margin: auto;
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      }
+
+      .controls {
+        margin-bottom: 20px;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        background: #fff;
+        padding: 10px;
+        border-radius: 8px;
+      }
+
+      .canvas-container {
+        height: 350px;
+        margin-bottom: 20px;
+        border: 1px solid #eee;
+        padding: 10px;
+        border-radius: 8px;
+      }
+
+      .debug-section {
+        margin-top: 20px;
+      }
+      #liveLog {
+        background: #1e1e1e;
+        color: #00ff00;
+        padding: 15px;
+        height: 150px;
+        overflow-y: auto;
+        border-radius: 8px;
+        font-family: "Consolas", monospace;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      h3 {
+        margin-top: 0;
+        color: #444;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 5px;
+        display: inline-block;
+      }
+      .status-badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: bold;
+      }
+      .disconnected {
+        background: #ffebee;
+        color: #c62828;
+      }
+      .connected {
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>ESP32 Real-Time Monitor</h2>
+
+      <div class="controls">
+        <button id="connectBtn" style="padding: 10px 20px; cursor: pointer">
+          🔌 Gerät verbinden
+        </button>
+        <span id="statusBadge" class="status-badge disconnected"
+          >Status: Getrennt</span
+        >
+        <label
+          >Baudrate:
+          <select id="baudRate">
+            <option value="115200">115200</option>
+            <option value="9600" selected>9600</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="canvas-container">
+        <canvas id="realTimeChart"></canvas>
+      </div>
+
+      <div class="debug-section">
+        <h3>Live-Daten (Raw Log)</h3>
+        <div id="liveLog">Warte auf Verbindung...</div>
+      </div>
+    </div>
+
+    <script>
+      let port;
+      let chart;
+      const maxDataPoints = 40;
+      const liveLog = document.getElementById("liveLog");
+      const statusBadge = document.getElementById("statusBadge");
+
+      // 1. Chart Initialisierung
+      const ctx = document.getElementById("realTimeChart").getContext("2d");
+      chart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: "Sensorwert",
+              data: [],
+              borderColor: "#007bff",
+              backgroundColor: "rgba(0, 123, 255, 0.1)",
+              borderWidth: 2,
+              tension: 0.4,
+              pointRadius: 2,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          scales: { y: { beginAtZero: false } },
+        },
+      });
+
+      // 2. Verbindung aufbauen
+      async function connect() {
+        try {
+          port = await navigator.serial.requestPort();
+          const baudRate = parseInt(document.getElementById("baudRate").value);
+          await port.open({ baudRate });
+
+          statusBadge.innerText = "Status: Verbunden";
+          statusBadge.className = "status-badge connected";
+          liveLog.innerText = "Verbindung hergestellt. Empfange Daten...\n";
+
+          const decoder = new TextDecoderStream();
+          port.readable.pipeTo(decoder.writable);
+          const inputStream = decoder.readable;
+
+          const reader = inputStream
+            .pipeThrough(new TransformStream(new LineBreakTransformer()))
+            .getReader();
+
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+
+            if (value) {
+              processIncomingLine(value);
+            }
+          }
+        } catch (error) {
+          liveLog.innerText += `\nFEHLER: ${error.message}`;
+          console.error(error);
+        }
+      }
+
+      // 3. Daten verarbeiten
+      function processIncomingLine(line) {
+        const cleanLine = line.trim();
+
+        // Im Log anzeigen (mit Zeitstempel)
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = `[${timestamp}] RX: ${cleanLine}`;
+        liveLog.innerText =
+          logEntry +
+          "\n" +
+          liveLog.innerText.split("\n").slice(0, 10).join("\n");
+
+        // Versuchen, in Zahl umzuwandeln für Diagramm
+        const numericValue = parseFloat(cleanLine);
+        if (!isNaN(numericValue)) {
+          addDataToChart(timestamp, numericValue);
+        }
+      }
+
+      function addDataToChart(label, value) {
+        chart.data.labels.push(label);
+        chart.data.datasets[0].data.push(value);
+
+        if (chart.data.labels.length > maxDataPoints) {
+          chart.data.labels.shift();
+          chart.data.datasets[0].data.shift();
+        }
+        chart.update();
+      }
+
+      // Transformer für saubere Zeilenumbrüche
+      class LineBreakTransformer {
+        constructor() {
+          this.chunks = "";
+        }
+        transform(chunk, controller) {
+          this.chunks += chunk;
+          const lines = this.chunks.split(/\r?\n/);
+          this.chunks = lines.pop();
+          lines.forEach((line) => controller.enqueue(line));
+        }
+        flush(controller) {
+          controller.enqueue(this.chunks);
+        }
+      }
+
+      document.getElementById("connectBtn").addEventListener("click", connect);
+    </script>
+  </body>
+</html>
