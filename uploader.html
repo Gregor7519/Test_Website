@@ -1,44 +1,21 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
+
 <head>
-    <meta charset="UTF-8">
-    <title>Funduino Uno Web Uploader</title>
-    
-    <!-- Dieses Skript sucht automatisch nach speziellen Buttons auf der Seite -->
-    <script src="https://dbuezas.github.io/arduino-web-uploader/test/index.js"></script>
-    
-    <style>
-        body { font-family: sans-serif; padding: 20px; text-align: center; }
-        /* Schickes Styling für den Upload-Button */
-        button[arduino-uploader] {
-            background-color: #00979d;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        button[arduino-uploader]:hover { background-color: #008185; }
-    </style>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Page Title</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://github.com/dbuezas/arduino-web-uploader/releases/download/v1.1.2/main.js"></script>
 </head>
+
 <body>
-
-    <h1>Funduino Uno Firmware Updater</h1>
-    <p>Schließe deinen Funduino per USB an und klicke auf den Button.</p>
-
-    <!-- 
-      Das Skript reagiert vollautomatisch auf die Attribute in diesem Button!
-      - arduino-uploader: Aktiviert die Library für diesen Button
-      - hex-href: Der Pfad zu deiner .hex-Datei (z.B. im selben Ordner)
-      - board: "uno" passt perfekt für deinen Funduino Uno
-    -->
-    <button 
-        arduino-uploader 
-        hex-href="./Test_Website.ino.hex" 
-        board="uno">
-        Programm auf Funduino spielen
-    </button>
-
+  <h1>
+    <a href="https://github.com/dbuezas/arduino-web-uploader">https://github.com/dbuezas/arduino-web-uploader</a>
+  </h1>
+  <button arduino-uploader hex-href="./Test_Website.ino.hex" board="nano" verify>
+    Upload Blink to nano/uno/pro/pro-mini [<span class="upload-progress"></span>]
+  </button>
 </body>
+
 </html>
